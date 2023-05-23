@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:delivery/controllers/auth_controller.dart';
 import 'package:delivery/controllers/location_controllers.dart';
 import 'package:delivery/controllers/user_controller.dart';
@@ -8,12 +8,11 @@ import 'package:delivery/routes/route_helper.dart';
 import 'package:delivery/utils/dimensions.dart';
 import 'package:delivery/widgets/app_text_filed.dart';
 import 'package:delivery/widgets/big_text.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:get/get.dart';
-
-import '../../widgets/app_icon.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class AddAddressPage extends StatefulWidget {
   const AddAddressPage({Key? key}) : super(key: key);
@@ -23,13 +22,62 @@ class AddAddressPage extends StatefulWidget {
 }
 
 class _AddAddressPageState extends State<AddAddressPage> {
+  late GoogleMapController mapController;
   TextEditingController _addressController = TextEditingController();
   final TextEditingController _contactPersonName = TextEditingController();
   final TextEditingController _contactPersonNumber = TextEditingController();
   late bool _isLogged;
-  CameraPosition _cameraPosition =
-      const CameraPosition(target: LatLng(35.984896, 36.483409), zoom: 17);
-  late LatLng _initialPosition = LatLng(35.984896, 36.483409);
+
+  CameraPosition initialCameraPosition = const CameraPosition(
+    target: LatLng(35.932399, 36.640477),
+    zoom: 10.0,
+  );
+
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('قم بتغعيل الموقع ثم حاول مجدداً')));
+      return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('لم تسمح للتطبيق بتحديد موقعك')));
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لقد منعت الصلاحية عن التطبيق')));
+      return false;
+    }
+    return true;
+  }
+
+  void getLocation() async {
+    try {
+      if (await _handleLocationPermission()) {
+        Position position = await Geolocator.getCurrentPosition();
+        Get.find<LocationController>().setPostion(position);
+        mapController.animateCamera(CameraUpdate.newCameraPosition(
+            CameraPosition(
+                target: LatLng(position.latitude, position.longitude),
+                tilt: 0,
+                zoom: 14.5)));
+      }
+    } on PlatformException catch (e) {
+      if (e.code == 'PERMESSION_DENIED') {
+        debugPrint("permession denied");
+      }
+    }
+  }
+
   @override
   void initState() {
     // TODO: implement initState
@@ -38,18 +86,26 @@ class _AddAddressPageState extends State<AddAddressPage> {
     if (_isLogged && Get.find<UserController>().userModel == null) {
       Get.find<UserController>().getUserInfo();
     }
-    if (Get.find<LocationController>().addressList.isNotEmpty) {
-      Get.find<LocationController>().getUserAddress();
-      _cameraPosition = CameraPosition(
-          target: LatLng(
-        double.parse(Get.find<LocationController>().getAddress["latitude"]),
-        double.parse(Get.find<LocationController>().getAddress["longitude"]),
-      ));
-      _initialPosition = LatLng(
-        double.parse(Get.find<LocationController>().getAddress["latitude"]),
-        double.parse(Get.find<LocationController>().getAddress["longitude"]),
-      );
-    }
+    // if (Get.find<LocationController>().addressList.isNotEmpty) {
+    //   Get.find<LocationController>().getUserAddress();
+    //   initialCameraPosition = CameraPosition(
+    //       target: LatLng(
+    //     double.parse(Get.find<LocationController>().getAddress["latitude"]),
+    //     double.parse(Get.find<LocationController>().getAddress["longitude"]),
+    //   ));
+    //   _initialPosition = LatLng(
+    //     double.parse(Get.find<LocationController>().getAddress["latitude"]),
+    //     double.parse(Get.find<LocationController>().getAddress["longitude"]),
+    //   );
+    // }
+    Timer(const Duration(microseconds: 100), () => getLocation());
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    mapController.dispose();
   }
 
   @override
@@ -70,10 +126,10 @@ class _AddAddressPageState extends State<AddAddressPage> {
           }
         }
         return GetBuilder<LocationController>(builder: (locationController) {
-          _addressController.text = '${locationController.placemark.name ?? ''}'
-              '${locationController.placemark.locality ?? ''}'
-              '${locationController.placemark.postalCode ?? ''}'
-              '${locationController.placemark.country ?? ''}';
+          // _addressController.text = '${locationController.placemark.name ?? ''}'
+          //     '${locationController.placemark.locality ?? ''}'
+          //     '${locationController.placemark.postalCode ?? ''}'
+          //     '${locationController.placemark.country ?? ''}';
           print("address in my view is " + _addressController.text);
           return SingleChildScrollView(
             child: Column(
@@ -92,21 +148,22 @@ class _AddAddressPageState extends State<AddAddressPage> {
                   child: Stack(
                     children: [
                       GoogleMap(
-                        initialCameraPosition:
-                            CameraPosition(target: _initialPosition, zoom: 17),
+                        initialCameraPosition: initialCameraPosition,
                         zoomControlsEnabled: false,
                         compassEnabled: false,
                         indoorViewEnabled: true,
                         mapToolbarEnabled: false,
                         myLocationEnabled: true,
-                        onCameraIdle: () {
-                          locationController.updatePosition(
-                              _cameraPosition, true);
-                        },
-                        onCameraMove: ((Position) =>
-                            _cameraPosition = Position),
+                        // onCameraIdle: () {
+                        //   locationController.updatePosition(
+                        //       _cameraPosition, true);
+                        // },
+                        // onCameraMove: ((Position) =>
+                        //     _cameraPosition = Position),
                         onMapCreated: (GoogleMapController controller) {
-                          locationController.setMapController(controller);
+                          setState(() {
+                            mapController = controller;
+                          });
                         },
                       ),
                     ],

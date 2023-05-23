@@ -1,4 +1,4 @@
-import 'package:delivery/widgets/big_texdget.dart';
+import 'package:delivery/widgets/big_text.dart';
 import 'package:delivery/widgets/icon_and_text_widget.dart';
 import 'package:delivery/widgets/small_text.dart';
 import 'package:dots_indicator/dots_indicator.dart';
@@ -45,7 +45,6 @@ class _FoodPageBodyState extends State<FoodPageBody> {
         ),
         new DotsIndicator(
             dotsCount: 5,
-            position: _currPageValue,
             decorator: DotsDecorator(
               activeColor: Color.fromARGB(122, 63, 129, 129),
               size: const Size.square(9.0),

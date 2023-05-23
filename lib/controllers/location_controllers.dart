@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
 
 import 'package:delivery/data/repository/location_repo.dart';
 import 'package:geocoding/geocoding.dart';
@@ -42,7 +41,11 @@ class LocationController extends GetxController implements GetxService {
     _mapController = mapController;
   }
 
-  void updatePosition(CameraPosition position, bool fromAddress) async {
+  setPostion(Position pos) {
+    _position = pos;
+  }
+
+  void updatePotion(CameraPosition position, bool fromAddress) async {
     if (_updateAddressDate) {
       _loading = true;
       update();
@@ -111,6 +114,7 @@ class LocationController extends GetxController implements GetxService {
     } catch (e) {
       print(e);
     }
+
     return _addressModel;
   }
 

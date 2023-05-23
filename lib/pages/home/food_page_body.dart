@@ -1,17 +1,16 @@
-import 'package:dots_indicator/dots_indicator.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:delivery/controllers/recommended_product_controller.dart';
 import 'package:delivery/models/products_models.dart';
 import 'package:delivery/routes/route_helper.dart';
 import 'package:delivery/widgets/big_text.dart';
 import 'package:delivery/widgets/small_text.dart';
+import 'package:dots_indicator/dots_indicator.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import '../../controllers/popular_product_controller.dart';
 import '../../utils/apps_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../widgets/app_column.dart';
-import 'package:get/get.dart';
 
 class FoodPageBody extends StatefulWidget {
   const FoodPageBody({super.key});
@@ -67,7 +66,6 @@ class _FoodPageBodyState extends State<FoodPageBody> {
               dotsCount: popularProducts.popularProductList.isEmpty
                   ? 1
                   : popularProducts.popularProductList.length,
-              position: _currPageValue,
               decorator: DotsDecorator(
                 activeColor: Color.fromARGB(225, 103, 171, 151),
                 size: const Size.square(9.0),
